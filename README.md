@@ -1,4 +1,4 @@
-# Homework 4: L-systems
+# Procedural Tree - L-systems
 
 For this assignment, you will design a set of formal grammar rules to create
 a plant life using an L-system program. Once again, you will work from a
