@@ -15763,7 +15763,11 @@ class LSystem {
             let sym = insn.substr(i, 1);
             if (sym == "F") {
                 let start = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(turtle.pos[0], turtle.pos[1], turtle.pos[2]);
-                turtle.moveForward(this.DefaultStep);
+                let p = Math.random();
+                if (p > 0.8)
+                    turtle.moveForward(this.DefaultStep);
+                else
+                    turtle.moveForward(this.DefaultStep * 1.2);
                 let end = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(turtle.pos[0], turtle.pos[1], turtle.pos[2]);
                 this.Branches.push(new Branch(start, end, Math.max(__WEBPACK_IMPORTED_MODULE_2__main__["controls"].Thickness * Math.pow(__WEBPACK_IMPORTED_MODULE_2__main__["controls"].ShrinkExp, turtle.Depth), 0.05), Math.max(__WEBPACK_IMPORTED_MODULE_2__main__["controls"].Thickness * Math.pow(__WEBPACK_IMPORTED_MODULE_2__main__["controls"].ShrinkExp, turtle.Depth + 1), 0.05)));
             }

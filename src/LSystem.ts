@@ -86,7 +86,11 @@ export class LSystem{
 			let sym = insn.substr(i, 1);
 			if(sym == "F"){
 				let start = vec3.fromValues(turtle.pos[0],turtle.pos[1],turtle.pos[2]);
-				turtle.moveForward(this.DefaultStep);
+				let p = Math.random();
+				if (p > 0.8)
+					turtle.moveForward(this.DefaultStep);
+				else
+					turtle.moveForward(this.DefaultStep * 1.2);
 				let end = vec3.fromValues(turtle.pos[0],turtle.pos[1],turtle.pos[2]);
 				this.Branches.push(new Branch(start, end, Math.max(controls.Thickness*Math.pow(controls.ShrinkExp,turtle.Depth), 0.05), Math.max(controls.Thickness*Math.pow(controls.ShrinkExp,turtle.Depth+1), 0.05)));
 			}
