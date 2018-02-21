@@ -319,6 +319,7 @@ const controls = {
     Flower_Scale: 1.25,
     DefaultStep: 0.5,
     DefaultAngle: 23,
+    BranchColor: [55, 40, 23, 1],
     ShrinkExp: 0.94,
     Thickness: 1.0,
     Base: 'A',
@@ -387,7 +388,12 @@ function loadScene() {
         let translationMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].fromTranslation(translationMat, midPos);
         let modelMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].multiply(modelMat, translationMat, rotationMat);
+        let subLen = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].subtract(subLen, LS.Branches[i].endPos, LS.Branches[i].startPos);
+        let scaleY = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].length(subLen) / controls.DefaultStep;
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].scale(modelMat, modelMat, [1.0, scaleY, 1.0]);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].multiply(modelMat, rotationMat, modelMat);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].multiply(modelMat, translationMat, modelMat);
         branches.add(cylinder, modelMat);
     }
     branches.bindTex("./src/models/branch_col.jpg");
@@ -433,6 +439,7 @@ function main() {
     gui.add(controls, 'Flower_Scale', 0.0, 2.0).step(0.1);
     gui.add(controls, 'DefaultStep', 0.1, 3.0);
     gui.add(controls, 'DefaultAngle', 0.0, 90.0);
+    gui.addColor(controls, 'BranchColor');
     gui.add(controls, 'ShrinkExp', 0.0, 1.0).step(0.01);
     gui.add(controls, 'Thickness', 0.0, 5.0).step(0.1);
     gui.add(controls, 'Base');
@@ -466,9 +473,13 @@ function main() {
     const renderer = new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_OpenGLRenderer__["a" /* default */](canvas);
     renderer.setClearColor(0.0, 0.0, 0.0, 1);
     gl.enable(gl.DEPTH_TEST);
-    const tricolor = new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["b" /* default */]([
+    const lambert = new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["b" /* default */]([
         new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(73)),
         new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(74)),
+    ]);
+    const branch_shader = new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["b" /* default */]([
+        new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(75)),
+        new __WEBPACK_IMPORTED_MODULE_10__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(76)),
     ]);
     // This function will be called every frame
     function tick() {
@@ -476,14 +487,13 @@ function main() {
         stats.begin();
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
         renderer.clear();
-        let shader = tricolor;
-        renderer.render(camera, shader, [
+        renderer.render(camera, lambert, [
             ground
         ]);
-        renderer.render(camera, shader, [
+        renderer.render(camera, branch_shader, [
             branches
         ]);
-        renderer.render(camera, shader, [
+        renderer.render(camera, lambert, [
             flowers
         ]);
         stats.end();
@@ -12425,6 +12435,7 @@ class OpenGLRenderer {
         prog.setModelMatrix(model);
         prog.setViewProjMatrix(viewProj);
         prog.updateTime(Math.sin(time));
+        prog.setColor(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(__WEBPACK_IMPORTED_MODULE_2__main__["controls"].BranchColor[0] / 255, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].BranchColor[1] / 255, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].BranchColor[2] / 255, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].BranchColor[3]));
         prog.setWindInfo(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec2 */].fromValues(__WEBPACK_IMPORTED_MODULE_2__main__["controls"].WindDirX, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].WindDirY), __WEBPACK_IMPORTED_MODULE_2__main__["controls"].WindSpeed, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].WaveWidth, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].WindStrength, __WEBPACK_IMPORTED_MODULE_2__main__["controls"].BendScale);
         for (let scene of scenes) {
             prog.setTexture(scene.diffuseMap);
@@ -15587,6 +15598,7 @@ class ShaderProgram {
         this.unifWaveWidth = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_WaveWidth");
         this.unifWindStrength = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_WindStrength");
         this.unifBendScale = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_BendScale");
+        this.unifColor = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Color");
         this.unifDiffuseMap = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_DiffuseMap");
     }
     use() {
@@ -15611,6 +15623,12 @@ class ShaderProgram {
         this.use();
         if (this.unifViewProj !== -1) {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniformMatrix4fv(this.unifViewProj, false, vp);
+        }
+    }
+    setColor(color) {
+        this.use();
+        if (this.unifColor !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform4fv(this.unifColor, color);
         }
     }
     setTexture(texture) {
@@ -15764,7 +15782,7 @@ class LSystem {
             if (sym == "F") {
                 let start = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(turtle.pos[0], turtle.pos[1], turtle.pos[2]);
                 let p = Math.random();
-                if (p > 0.8)
+                if (p > 0.2)
                     turtle.moveForward(this.DefaultStep);
                 else
                     turtle.moveForward(this.DefaultStep * 1.2);
@@ -15917,6 +15935,18 @@ module.exports = "#version 300 es\r\n\r\n//This is a vertex shader. While it is 
 /***/ (function(module, exports) {
 
 module.exports = "#version 300 es\r\n\r\n// This is a fragment shader. If you've opened this file first, please\r\n// open and read lambert.vert.glsl before reading on.\r\n// Unlike the vertex shader, the fragment shader actually does compute\r\n// the shading of geometry. For every pixel in your program's output\r\n// screen, the fragment shader is run for every bit of geometry that\r\n// particular pixel overlaps. By implicitly interpolating the position\r\n// data passed into the fragment shader by the vertex shader, the fragment shader\r\n// can compute what color to apply to its pixel based on things like vertex\r\n// position, light position, and vertex color.\r\nprecision highp float;\r\n\r\nuniform vec4 u_Color; // The color with which to render this instance of geometry.\r\nuniform sampler2D u_DiffuseMap;\r\n\r\n// These are the interpolated values out of the rasterizer, so you can't know\r\n// their specific values without knowing the vertices that contributed to them\r\nin vec4 fs_Nor;\r\nin vec4 fs_LightVec;\r\nin vec4 fs_Col;\r\nin vec2 fs_Uv;\r\n\r\nout vec4 out_Col; // This is the final output color that you will see on your\r\n                  // screen for the pixel that is currently being processed.\r\n\r\nvoid main()\r\n{\r\n    // Material base color (before shading)\r\n        //vec4 diffuseColor = vec4(0.32,0.2,0.03,1.0);\r\n        vec4 diffuseColor = texture(u_DiffuseMap, fs_Uv);\r\n\r\n        // Calculate the diffuse term for Lambert shading\r\n        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));\r\n        // Avoid negative lighting values\r\n        diffuseTerm = clamp(diffuseTerm, 0.0, 1.0);\r\n        float ambientTerm = 0.2;\r\n\r\n        float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier\r\n                                                            //to simulate ambient lighting. This ensures that faces that are not\r\n                                                            //lit by our point light are not completely black.\r\n\r\n        // Compute final shaded color\r\n        out_Col = vec4(diffuseColor.rgb * lightIntensity * 1.2, diffuseColor.a);\r\n}\r\n"
+
+/***/ }),
+/* 75 */
+/***/ (function(module, exports) {
+
+module.exports = "#version 300 es\r\n\r\n//This is a vertex shader. While it is called a \"shader\" due to outdated conventions, this file\r\n//is used to apply matrix transformations to the arrays of vertex data passed to it.\r\n//Since this code is run on your GPU, each vertex is transformed simultaneously.\r\n//If it were run on your CPU, each vertex would have to be processed in a FOR loop, one at a time.\r\n//This simultaneous transformation allows your program to run much faster, especially when rendering\r\n//geometry with millions of vertices.\r\n\r\nuniform mat4 u_Model;       // The matrix that defines the transformation of the\r\n                            // object we're rendering. In this assignment,\r\n                            // this will be the result of traversing your scene graph.\r\nuniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.\r\n                            // This allows us to transform the object's normals properly\r\n                            // if the object has been non-uniformly scaled.\r\n\r\nuniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation.\r\n                            // We've written a static matrix for you to use for HW2,\r\n                            // but in HW3 you'll have to generate one yourself\r\n// uniform vec4 u_Color; // The color with which to render this instance of geometry.\r\n\r\nuniform float u_Time;\r\n\r\nuniform vec2 u_WindDir;\r\nuniform float u_BendScale;\r\nuniform float u_WindSpeed;\r\nuniform float u_WaveWidth;\r\nuniform float u_WindStrength;\r\n\r\nin vec4 vs_Pos;             // The array of vertex positions passed to the shader\r\n\r\nin vec4 vs_Nor;             // The array of vertex normals passed to the shader\r\n\r\nin vec4 vs_Col;             // The array of vertex colors passed to the shader.\r\nin vec2 vs_Uv;\r\n\r\nout vec4 fs_Nor;            // The array of normals that has been transformed by u_ModelInvTr. This is implicitly passed to the fragment shader.\r\nout vec4 fs_LightVec;       // The direction in which our virtual light lies, relative to each vertex. This is implicitly passed to the fragment shader.\r\nout vec4 fs_Col;            // The color of each vertex. This is implicitly passed to the fragment shader.\r\nout vec2 fs_Uv;\r\n\r\nconst vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of\r\n                                        //the geometry in the fragment shader.\r\n\r\nvoid ApplyMainBending(inout vec3 vPos, vec2 vWind, float fBendScale){\r\n    // Calculate the length from the ground, since we'll need it.\r\n    float fLength = length(vPos);\r\n    // Bend factor - Wind variation is done on the CPU.\r\n    float fBF = vPos.y * fBendScale;\r\n    // Smooth bending factor and increase its nearby height limit.\r\n    fBF += 1.0;\r\n    fBF *= fBF;\r\n    fBF = fBF * fBF - fBF;\r\n    fBF = fBF * fBF;\r\n    // Displace position\r\n    vec3 vNewPos = vPos;\r\n    vNewPos.xz += vWind.xy * fBF;\r\n    vPos.xyz = normalize(vNewPos.xyz)* fLength;\r\n}\r\n\r\nvoid main()\r\n{\r\n    fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation\r\n    fs_Uv = vs_Uv;\r\n    \r\n    //mat3 invTranspose = mat3(u_ModelInvTr);\r\n    fs_Nor = vec4(vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.\r\n                                                            // Transform the geometry's normals by the inverse transpose of the\r\n                                                            // model matrix. This is necessary to ensure the normals remain\r\n                                                            // perpendicular to the surface after the surface is transformed by\r\n                                                            // the model matrix.\r\n\r\n    //Wind\r\n    vec3 vPos = vec3(vs_Pos);\r\n    vec3 wind_dir = normalize(vec3(u_WindDir.x, 0, u_WindDir.y));\r\n    float wave_info = (cos((dot(vec3(0, 0, 0), wind_dir) - u_WindSpeed * u_Time) / u_WaveWidth) + 0.7);\r\n    \r\n    //vec3 w = wind_dir * wind_power * wave_info * fd * fr;\r\n    vec3 w=wind_dir * u_WindStrength * wave_info*0.05;\r\n    vec2 Wind=vec2(w.x,w.z);\r\n\r\n    vec3 objectPosition = vec3(0,0,0);\r\n    vPos -= objectPosition; // Reset the vertex to base-zero\r\n    ApplyMainBending(vPos, Wind, u_BendScale);\r\n    vPos += objectPosition;\r\n\r\n    vec4 modelposition =  vec4(vPos, 1.0);   // Temporarily store the transformed vertex positions for use below\r\n\r\n    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies\r\n\r\n    gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is\r\n                                             // used to render the final positions of the geometry's vertices\r\n}\r\n"
+
+/***/ }),
+/* 76 */
+/***/ (function(module, exports) {
+
+module.exports = "#version 300 es\r\n\r\n// This is a fragment shader. If you've opened this file first, please\r\n// open and read lambert.vert.glsl before reading on.\r\n// Unlike the vertex shader, the fragment shader actually does compute\r\n// the shading of geometry. For every pixel in your program's output\r\n// screen, the fragment shader is run for every bit of geometry that\r\n// particular pixel overlaps. By implicitly interpolating the position\r\n// data passed into the fragment shader by the vertex shader, the fragment shader\r\n// can compute what color to apply to its pixel based on things like vertex\r\n// position, light position, and vertex color.\r\nprecision highp float;\r\n\r\nuniform vec4 u_Color; // The color with which to render this instance of geometry.\r\nuniform sampler2D u_DiffuseMap;\r\n\r\n// These are the interpolated values out of the rasterizer, so you can't know\r\n// their specific values without knowing the vertices that contributed to them\r\nin vec4 fs_Nor;\r\nin vec4 fs_LightVec;\r\nin vec4 fs_Col;\r\nin vec2 fs_Uv;\r\n\r\nout vec4 out_Col; // This is the final output color that you will see on your\r\n                  // screen for the pixel that is currently being processed.\r\n\r\nvoid main()\r\n{\r\n    // Material base color (before shading)\r\n        //vec4 diffuseColor = vec4(0.32,0.2,0.03,1.0);\r\n        vec4 diffuseColor = u_Color;\r\n\r\n        // Calculate the diffuse term for Lambert shading\r\n        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));\r\n        // Avoid negative lighting values\r\n        diffuseTerm = clamp(diffuseTerm, 0.0, 1.0);\r\n        float ambientTerm = 0.2;\r\n\r\n        float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier\r\n                                                            //to simulate ambient lighting. This ensures that faces that are not\r\n                                                            //lit by our point light are not completely black.\r\n\r\n        // Compute final shaded color\r\n        out_Col = vec4(diffuseColor.rgb * lightIntensity * 1.2, diffuseColor.a);\r\n}\r\n"
 
 /***/ })
 /******/ ]);
