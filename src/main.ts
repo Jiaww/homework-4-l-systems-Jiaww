@@ -93,7 +93,12 @@ function loadScene() {
     let translationMat = mat4.create();
     mat4.fromTranslation(translationMat, midPos);
     let modelMat = mat4.create();
-    mat4.multiply(modelMat, translationMat, rotationMat);
+    let subLen = vec3.create();
+    vec3.subtract(subLen, LS.Branches[i].endPos, LS.Branches[i].startPos);
+    let scaleY = vec3.length(subLen)/controls.DefaultStep;
+    mat4.scale(modelMat, modelMat, [1.0,scaleY,1.0]);
+    mat4.multiply(modelMat, rotationMat, modelMat);
+    mat4.multiply(modelMat, translationMat, modelMat);
     branches.add(cylinder, modelMat);
   }
   branches.bindTex("./src/models/branch_col.jpg");

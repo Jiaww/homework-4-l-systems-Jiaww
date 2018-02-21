@@ -87,7 +87,7 @@ export class LSystem{
 			if(sym == "F"){
 				let start = vec3.fromValues(turtle.pos[0],turtle.pos[1],turtle.pos[2]);
 				let p = Math.random();
-				if (p > 0.8)
+				if (p > 0.2)
 					turtle.moveForward(this.DefaultStep);
 				else
 					turtle.moveForward(this.DefaultStep * 1.2);
