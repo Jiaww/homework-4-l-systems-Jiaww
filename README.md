@@ -1,24 +1,42 @@
 # Procedural Tree - L-systems
 
-For this assignment, you will design a set of formal grammar rules to create
-a plant life using an L-system program. Once again, you will work from a
-Typescript / WebGL 2.0 base code like the one you used in homework 0. You will
-implement your own set of classes to handle the L-system grammar expansion and
-drawing. You will rasterize your L-system using faceted geometry. Feel free
-to use ray marching to generate an interesting background, but trying to
-raymarch an entire L-system will take too long to render!
+* *Jiawei Wang, CGGT, University of Pennsylvania*
+* *Pennkey: jiaww*
 
-## L-System Components
-The way you implement your L-System is ultimately up to you, but we recommend
-creating the following classes / constructs to help you instantiate, expand, and
-draw your grammars:
-* Some sort of expandable collection of string characters. You might implement
-a linked list data structure, or you might use a basic Javascript array (which
-is resizeable).
-* Some sort of class to represent a Rule for expanding a character into a
-string. You might consider creating a map within each Rule that maps
-probabilities to strings, so that a Rule can represent multiple possible
-expansions for a character with different probabilities.
+## Overview
+The project is to create a **procedural tree** using **L-system**, developed in WebGL. Here is the final rendering:
+
+|**Final Result [Iteration=8]**|
+|---|
+|<img src="./results/wind.gif" width="500" height="500">|
+
+## L-System Rules:
+* **`F`**: Move Forward by `DefaultStep` and Create a Branch(Cylinder)
+* **`f`**: Move Forward by `DefaultStep`
+* **`+`**: Rotate along Up-Axis for `DefaultAngle` degrees
+* **`-`**: Rotate along Up-Axis for `-DefaultAngle` degrees
+* **`&`**: Rotate along Left-Axis for `DefaultAngle` degrees
+* **`^`**: Rotate along Left-Axis for `-DefaultAngle` degrees
+* **`\\`**: Rotate along Forward-Axis for `DefaultAngle` degrees
+* **`/`**: Rotate along Forward-Axis for `-DefaultAngle` degrees
+* **`|`**: Rotate along Up-Axis for `180` degrees
+* **`[`**: Push current Turtle into stack
+* **`]`**: Pop Turtle from stack
+* **`*`**: Create Flower on current position
+* **Others**: Do nothing
+
+## Implement Details
+* **Big VBO**: Instead of using one vbo for each mesh(cylinder or flower), here we use one big VBO for all mesh. It means we will compute the transform results before we write into VBO, and we only need one draw call to render all of the meshes. Although it will increase the memory usage, it can make the rendering much faster.
+* **About the requirement of the linked list**: Here I am not using link list to store and expand the L-system program, I think it's unnecessary to use link-list since the string can also perform really good for such situation.
+* **Wind**: I use Vertex Animation here, just follow the instruction on [*Gem 3, Chapter 16*](https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch16.html), I only implement the branch bending part in the shader.
+* **Branch Generation**: I write my own implementation of cylinder generation, which is more easy to create different top and bottom radius of the branch. (The higher the depth, the thinner the branch, which can be modify by the parameter `ShrinkExp`)
+* **OBJ Loading**: I use webgl-obj-loader for the .obj loading. There are 4 levels of detail of the flower, because the high-poly flower may cause the memory crash(too many triangles).
+
+|**LOD0**|**LOD1**|**LOD2**|**LOD3**|
+|---|---|---|---|
+|<img src="./results/LOD0.JPG" width="200" height="200">|<img src="./results/LOD1.JPG" width="200" height="200">|<img src="./results/LOD2.JPG" width="200" height="200">|<img src="./results/LOD3.JPG" width="200" height="200">|
+
+* **Randomess of the flowers**: The flowers' sizes and directions are random to make the 
 * A second Rule-style class that dictates what drawing operation should be
 performed when a character is parsed during the drawing process. This should
 also be a map of probabilities, but this time the values in the map will be
