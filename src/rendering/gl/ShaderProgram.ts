@@ -38,6 +38,7 @@ class ShaderProgram {
   unifWaveWidth: WebGLUniformLocation;
   unifWindStrength: WebGLUniformLocation;
   unifBendScale: WebGLUniformLocation;
+  unifColor: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -64,6 +65,7 @@ class ShaderProgram {
     this.unifWaveWidth = gl.getUniformLocation(this.prog, "u_WaveWidth");
     this.unifWindStrength = gl.getUniformLocation(this.prog, "u_WindStrength");
     this.unifBendScale = gl.getUniformLocation(this.prog, "u_BendScale");
+    this.unifColor = gl.getUniformLocation(this.prog, "u_Color");
 
     this.unifDiffuseMap = gl.getUniformLocation(this.prog, "u_DiffuseMap");
 }
@@ -93,6 +95,13 @@ class ShaderProgram {
     this.use();
     if (this.unifViewProj !== -1) {
       gl.uniformMatrix4fv(this.unifViewProj, false, vp);
+    }
+  }
+
+  setColor(color: vec4){
+    this.use();
+    if (this.unifColor !== -1){
+      gl.uniform4fv(this.unifColor, color);
     }
   }
 

@@ -42,6 +42,7 @@ class OpenGLRenderer {
     prog.setModelMatrix(model);
     prog.setViewProjMatrix(viewProj);
     prog.updateTime(Math.sin(time));
+    prog.setColor(vec4.fromValues(controls.BranchColor[0]/255,controls.BranchColor[1]/255,controls.BranchColor[2]/255,controls.BranchColor[3]));
     prog.setWindInfo(vec2.fromValues(controls.WindDirX,controls.WindDirY),
       controls.WindSpeed,
       controls.WaveWidth,

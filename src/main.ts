@@ -19,6 +19,7 @@ export const controls = {
   Flower_Scale: 1.25,
   DefaultStep: 0.5,
   DefaultAngle: 23,
+  BranchColor: [55, 40, 23, 1],
   ShrinkExp: 0.94,
   Thickness: 1.0,
   Base: 'A',
@@ -146,6 +147,7 @@ function main() {
   gui.add(controls, 'Flower_Scale', 0.0, 2.0).step(0.1);
   gui.add(controls, 'DefaultStep', 0.1, 3.0);
   gui.add(controls, 'DefaultAngle', 0.0, 90.0);
+  gui.addColor(controls, 'BranchColor');
   gui.add(controls, 'ShrinkExp', 0.0, 1.0).step(0.01);
   gui.add(controls, 'Thickness', 0.0, 5.0).step(0.1);
   gui.add(controls, 'Base');
@@ -183,9 +185,14 @@ function main() {
   renderer.setClearColor(0.0,0.0,0.0, 1);
   gl.enable(gl.DEPTH_TEST);
 
-  const tricolor = new ShaderProgram([
+  const lambert = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
+  ]);
+
+  const branch_shader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/branch-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/branch-frag.glsl')),
   ]);
 
   // This function will be called every frame
@@ -194,14 +201,13 @@ function main() {
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
-    let shader = tricolor;
-    renderer.render(camera, shader, [
+    renderer.render(camera, lambert, [
       ground
     ]);
-    renderer.render(camera, shader, [
+    renderer.render(camera, branch_shader, [
       branches
     ]);
-    renderer.render(camera, shader, [
+    renderer.render(camera, lambert, [
       flowers
     ]);
     stats.end();
